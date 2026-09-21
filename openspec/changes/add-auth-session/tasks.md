@@ -1,16 +1,16 @@
 ## 1. Dependências e armazenamento seguro
 
-- [ ] 1.1 Instalar `expo-secure-store` via `npx expo install` — verificar
+- [x] 1.1 Instalar `expo-secure-store` via `npx expo install` — verificar
       que a versão instalada é compatível com o SDK do projeto (`npx expo
       config` sem aviso de incompatibilidade)
-- [ ] 1.2 Criar `src/auth/tokenStore.ts`: `getAccessToken()`/
+- [x] 1.2 Criar `src/auth/tokenStore.ts`: `getAccessToken()`/
       `setAccessToken()` em memória; `getRefreshToken()`/
       `setRefreshToken()`/`clearRefreshToken()` sobre
       `expo-secure-store`, com leitura/escrita envolvidas em `try/catch`
       (armazenamento seguro indisponível não deve lançar) — verificar com
       teste unitário (mock de `expo-secure-store`) cobrindo leitura,
       escrita, limpeza e falha do armazenamento
-- [ ] 1.3 Implementar o disparo único de renovação em `tokenStore.ts`:
+- [x] 1.3 Implementar o disparo único de renovação em `tokenStore.ts`:
       `getOrCreateRefreshPromise(factory)` guarda a promessa em curso e a
       reutiliza para quem chamar durante a renovação — verificar com
       teste unitário que duas chamadas concorrentes resultam em uma só
@@ -18,11 +18,11 @@
 
 ## 2. Cliente HTTP autenticado (`backend-integration/api-client`, sem mudança de spec)
 
-- [ ] 2.1 Estender `src/api/client.ts`: aceitar uma opção `auth: boolean`
+- [x] 2.1 Estender `src/api/client.ts`: aceitar uma opção `auth: boolean`
       por chamada; quando verdadeira, ler o access token de `tokenStore` e
       enviar `Authorization: Bearer` — verificar com teste unitário que o
       cabeçalho aparece só quando `auth: true`
-- [ ] 2.2 Implementar a renovação reativa: uma resposta `401` de chamada
+- [x] 2.2 Implementar a renovação reativa: uma resposta `401` de chamada
       com `auth: true` aciona `POST /auth/mobile/refresh` (via
       `tokenStore`, reaproveitando o disparo único da tarefa 1.3), repete
       a requisição original uma única vez com o novo access token, e
@@ -30,32 +30,32 @@
       testes unitários (mock de `fetch`) cobrindo: renovação bem-sucedida
       e repetição, renovação recusada, e nenhuma segunda renovação numa
       segunda recusa
-- [ ] 2.3 Garantir que endpoints públicos (`register`, `mobile/login`)
+- [x] 2.3 Garantir que endpoints públicos (`register`, `mobile/login`)
       nunca acionam a renovação reativa mesmo recebendo um `401` — verificar
       com teste unitário
 
 ## 3. API de autenticação
 
-- [ ] 3.1 Criar `src/api/auth.ts`: `register(input)`, `login(input)`
+- [x] 3.1 Criar `src/api/auth.ts`: `register(input)`, `login(input)`
       (chama `/auth/mobile/login`), `refresh(refreshToken)`,
       `logout(refreshToken?)` — tipos de entrada/saída batendo com o
       contrato documentado em design.md — verificar com testes unitários
       (mock de `client.request`) para cada função
-- [ ] 3.2 Criar `src/api/users.ts`: `getMe()` (`GET /users/me`, `auth:
+- [x] 3.2 Criar `src/api/users.ts`: `getMe()` (`GET /users/me`, `auth:
       true`) — verificar com teste unitário
 
 ## 4. Sessão (`auth/session`)
 
-- [ ] 4.1 Criar `src/auth/validation.ts`: regras de nome (2–120), e-mail
+- [x] 4.1 Criar `src/auth/validation.ts`: regras de nome (2–120), e-mail
       (formato, até 255, normalizado para minúsculas/sem espaços nas
       pontas) e senha (8–72), espelhando
       `mem-words-frontend/src/auth/validation.js` — verificar com testes
       unitários cobrindo cada regra e seus limites
-- [ ] 4.2 Criar `src/auth/session.ts`: tipos do estado
+- [x] 4.2 Criar `src/auth/session.ts`: tipos do estado
       (`determinando`/`sem-sessão`/`autenticado`) e o contexto React —
       verificar que os três estados são mutuamente exclusivos por tipo
       (TypeScript, sem `as`)
-- [ ] 4.3 Criar `src/auth/SessionProvider.tsx`: na montagem, lê o refresh
+- [x] 4.3 Criar `src/auth/SessionProvider.tsx`: na montagem, lê o refresh
       token guardado; havendo um, chama `refresh()` e depois `getMe()`
       para confirmar, seguindo design.md ("Restauração: trocar o token
       guardado, depois confirmar"); sem token guardado, vai direto para
@@ -63,23 +63,23 @@
       (mock das chamadas de API) os quatro cenários da spec: sessão
       válida, sessão inválida (token descartado), backend inacessível
       (nem confirma nem descarta), sem token guardado
-- [ ] 4.4 Implementar `register()` no `SessionProvider`: chama
+- [x] 4.4 Implementar `register()` no `SessionProvider`: chama
       `authApi.register`, depois `login()` com as mesmas credenciais;
       falha na segunda chamada é reportada como "conta criada, entre
       agora", nunca como falha de cadastro — verificar com teste unitário
       cobrindo sucesso, falha no registro, e falha na entrada encadeada
-- [ ] 4.5 Implementar `login()`: chama `authApi.login`, guarda o par de
+- [x] 4.5 Implementar `login()`: chama `authApi.login`, guarda o par de
       tokens via `tokenStore`, atualiza o estado para autenticado com o
       usuário retornado — verificar com teste unitário
-- [ ] 4.6 Implementar `logout()`: chama `authApi.logout` com o refresh
+- [x] 4.6 Implementar `logout()`: chama `authApi.logout` com o refresh
       token guardado, e descarta estado + tokens independentemente do
       resultado da chamada — verificar com teste unitário cobrindo
       backend disponível e indisponível
-- [ ] 4.7 Conectar a renovação reativa (tarefa 2.2) à queda de sessão: uma
+- [x] 4.7 Conectar a renovação reativa (tarefa 2.2) à queda de sessão: uma
       renovação recusada encerra a sessão local (mesmo caminho de
       `logout()`, sem chamar o backend de novo) — verificar com teste
       unitário
-- [ ] 4.8 Criar `useSession()` expondo o contexto — verificar que uma
+- [x] 4.8 Criar `useSession()` expondo o contexto — verificar que uma
       tela fora do `SessionProvider` recebe erro claro ao chamá-lo (mesmo
       padrão de `useTheme()` em `add-app-foundation`)
 

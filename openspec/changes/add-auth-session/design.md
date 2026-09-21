@@ -54,6 +54,12 @@ nativo qualquer.
   refresh token).
 
 **Non-Goals:**
+- `i18n/ui-language` (dois idiomas de interface) — texto fixo em
+  português nas telas desta change, como a tela de diagnóstico de
+  `add-app-foundation` já faz. O próprio `mem-words-frontend` introduziu
+  seletor de idioma só bem depois de várias telas existirem
+  (`add-ui-language-selector`, a última change do web antes desta), não
+  junto da primeira tela de autenticação — mesma ordem faz sentido aqui.
 - Telas de baralhos, revisão, perfil — mudam de capability e vêm depois.
 - Edição de perfil (troca de nome/e-mail/senha) — a capability
   `auth/session` do app não inclui essa operação ainda; entra junto da

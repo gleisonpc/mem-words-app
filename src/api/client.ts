@@ -1,17 +1,21 @@
 import Constants from 'expo-constants';
 
+import * as tokenStore from '../auth/tokenStore';
 import { ApiError } from './ApiError';
 
 /**
- * Cliente HTTP do backend — a única porta de saída do app nesta change.
+ * Cliente HTTP do backend — a única porta de saída do app.
  *
- * Transporte apenas: URL base, JSON, tempo limite, tradução de erro. Sem
- * `credentials`/cookie (não existe o mesmo conceito em React Native) e sem
- * envio de token — isso é responsabilidade da capability `auth/session`,
- * que ainda não existe (ver `backend-integration/api-client`, Purpose).
+ * Tempo limite, formato de erro, envio do token e renovação da sessão são
+ * decididos aqui, uma vez, e não repetidos por tela (ver spec
+ * `backend-integration/api-client`, e `auth/session` para a parte de
+ * renovação).
  */
 
 const DEFAULT_TIMEOUT_MS = 15000;
+
+/** Mensagem de sessão perdida, usada quando a renovação é recusada. */
+const SESSION_EXPIRED_MESSAGE = 'Sua sessão expirou. Entre novamente.';
 
 /** Remove a barra final para evitar URLs com `//` ao concatenar caminhos. */
 function normalize(url: string): string {
@@ -38,6 +42,15 @@ export interface RequestOptions {
   method?: string;
   body?: unknown;
   timeoutMs?: number;
+  /** Envia `Authorization: Bearer` e aciona renovação automática num 401. */
+  auth?: boolean;
+}
+
+interface AttemptOptions {
+  method: string;
+  body?: unknown;
+  timeoutMs: number;
+  auth: boolean;
 }
 
 /** Devolve `null` quando não há corpo — sucesso sem dados, não falha de leitura. */
@@ -60,19 +73,27 @@ async function readBody(response: Response): Promise<unknown> {
 }
 
 /**
- * Executa uma requisição ao backend.
+ * Uma tentativa de requisição: monta a URL, envia, devolve o corpo já
+ * traduzido ou lança `ApiError`.
  *
- * Lança `ApiError` para toda falha — do backend, de rede ou de tempo
- * limite — nunca deixa um erro nativo (`TypeError` do `fetch`, `DOMException`
- * do abort) escapar para quem chamou.
+ * O token é lido no momento do envio, não capturado antes — é isso que faz
+ * a repetição depois de uma renovação usar o token novo.
  */
-export async function request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
+async function attempt<T>(path: string, options: AttemptOptions): Promise<T> {
+  const { method, body, timeoutMs, auth } = options;
 
   const headers: Record<string, string> = { Accept: 'application/json' };
 
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
+  }
+
+  if (auth) {
+    const accessToken = tokenStore.getAccessToken();
+
+    if (accessToken !== null) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
   }
 
   const controller = new AbortController();
@@ -97,8 +118,6 @@ export async function request<T = unknown>(path: string, options: RequestOptions
       throw ApiError.timeout(timeoutMs);
     }
 
-    // Sem conectividade, DNS, backend fora do ar: o RN não distingue os
-    // casos para o script, e a tela não precisa distinguir.
     throw ApiError.network(error);
   } finally {
     clearTimeout(timeout);
@@ -109,4 +128,95 @@ export async function request<T = unknown>(path: string, options: RequestOptions
   }
 
   return payload as T;
+}
+
+interface MobileAuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+function sessionExpired(cause: unknown): ApiError {
+  return new ApiError(SESSION_EXPIRED_MESSAGE, { status: 401, code: 'SESSION_EXPIRED', cause });
+}
+
+/**
+ * Troca o refresh token guardado por um novo par de tokens
+ * (`POST /auth/mobile/refresh`), e os grava via `tokenStore`.
+ *
+ * Chama `/auth/mobile/refresh` diretamente em vez de importar
+ * `api/auth.ts`, para não criar dependência circular entre os dois
+ * módulos — mesma escolha do cliente web (ver design.md, "Renovação de
+ * disparo único").
+ *
+ * Backend inacessível NÃO é tratado como sessão inválida: só uma recusa
+ * explícita do backend (refresh token expirado, reusado, inexistente)
+ * derruba a sessão local.
+ */
+async function performRenewal(): Promise<MobileAuthTokens> {
+  const refreshToken = await tokenStore.getRefreshToken();
+
+  if (refreshToken === null) {
+    throw sessionExpired(undefined);
+  }
+
+  let tokens: MobileAuthTokens;
+
+  try {
+    tokens = await attempt<MobileAuthTokens>('/auth/mobile/refresh', {
+      method: 'POST',
+      body: { refreshToken },
+      auth: false,
+      timeoutMs: DEFAULT_TIMEOUT_MS,
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.isConnectionFailure) {
+      throw error;
+    }
+
+    await tokenStore.clearSession('session-expired');
+    throw sessionExpired(error);
+  }
+
+  tokenStore.setAccessToken(tokens.accessToken);
+  await tokenStore.setRefreshToken(tokens.refreshToken);
+  return tokens;
+}
+
+/**
+ * Troca o token de acesso por um novo, garantindo uma única renovação em
+ * curso por vez (ver `tokenStore.getOrCreateRefreshPromise`). Exportada
+ * porque a restauração de sessão na abertura do app reaproveita a mesma
+ * renovação.
+ */
+export function renewTokens(): Promise<MobileAuthTokens> {
+  return tokenStore.getOrCreateRefreshPromise(performRenewal);
+}
+
+/**
+ * Executa uma requisição ao backend.
+ *
+ * Com `auth: true`, uma recusa por autenticação (401) dispara uma
+ * renovação e **uma** repetição: a repetição é feita fora do `catch`,
+ * então uma segunda recusa sobe para quem chamou em vez de iniciar outra
+ * renovação — sem esse limite, credenciais erradas (que também respondem
+ * 401) entrariam em laço.
+ */
+export async function request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { method = 'GET', body, timeoutMs = DEFAULT_TIMEOUT_MS, auth = false } = options;
+  const attemptOptions: AttemptOptions = { method, body, timeoutMs, auth };
+
+  if (!auth) {
+    return attempt<T>(path, attemptOptions);
+  }
+
+  try {
+    return await attempt<T>(path, attemptOptions);
+  } catch (error) {
+    if (!(error instanceof ApiError) || !error.isUnauthorized) {
+      throw error;
+    }
+
+    await renewTokens();
+    return attempt<T>(path, attemptOptions);
+  }
 }

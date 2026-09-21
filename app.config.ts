@@ -24,6 +24,7 @@ const config: ExpoConfig = {
   icon: './assets/icon.png',
   scheme: 'memwords',
   userInterfaceStyle: 'automatic',
+  plugins: ['expo-secure-store'],
   ios: {
     supportsTablet: true,
     bundleIdentifier: variant === 'production' ? 'com.gleisonpc.memwords' : `com.gleisonpc.memwords.${variant}`,
