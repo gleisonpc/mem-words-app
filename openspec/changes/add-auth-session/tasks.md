@@ -90,29 +90,33 @@
       envio em curso, erro geral anunciado a tecnologia assistiva,
       `textContentType`/`autoComplete` nos campos, campo de senha com
       `secureTextEntry` e `returnKeyType="go"` submetendo o formulário —
-      verificar visualmente nos dois temas
+      verificar visualmente nos dois temas — **código e testes de
+      componente prontos; verificação visual em dispositivo pendente**
 - [ ] 5.2 Criar `src/screens/RegisterScreen.tsx`: campos de nome/e-mail/
       senha, mesma disciplina de validação e erro de `LoginScreen` —
-      verificar visualmente nos dois temas
-- [ ] 5.3 Ligar os erros por campo (`fieldErrors` de `ApiError`) aos
+      verificar visualmente nos dois temas — **código pronto; verificação
+      visual em dispositivo pendente**
+- [x] 5.3 Ligar os erros por campo (`fieldErrors` de `ApiError`) aos
       campos correspondentes nas duas telas — verificar com teste unitário
       (biblioteca de teste de componente) que um `fieldErrors.email`
       aparece associado ao campo de e-mail
 - [ ] 5.4 Adicionar navegação entre as duas telas (link de "já tenho
       conta" / "criar conta") — verificar navegação manual no Expo Go
-      — **requer dispositivo físico do usuário**
+      — **navegação testada por componente (`LoginScreen.test.tsx`);
+      verificação manual no Expo Go pendente — requer dispositivo físico
+      do usuário**
 
 ## 6. Navegação (`navigation/routing`, delta)
 
-- [ ] 6.1 Criar `src/navigation/PublicStack.tsx` (Login, Register,
+- [x] 6.1 Criar `src/navigation/PublicStack.tsx` (Login, Register,
       Diagnostics) e `src/navigation/AppStack.tsx` (Home, Diagnostics) —
       verificar `npx tsc --noEmit` sem erros
-- [ ] 6.2 Reescrever `RootNavigator.tsx` para escolher entre
+- [x] 6.2 Reescrever `RootNavigator.tsx` para escolher entre
       `PublicStack`, `AppStack` e uma tela de carregamento conforme
       `useSession()` (design.md, "Navegação") — verificar com teste
       unitário (mock de `useSession`) que cada um dos três estados
       renderiza a pilha/tela esperada
-- [ ] 6.3 Envolver `App.tsx` com `SessionProvider`, entre `ThemeProvider`
+- [x] 6.3 Envolver `App.tsx` com `SessionProvider`, entre `ThemeProvider`
       e `RootNavigator` — verificar que o app sobe sem erro
 - [ ] 6.4 Verificar no dispositivo físico via Expo Go: abrir o app sem
       sessão mostra a tela de entrada; cadastrar uma conta nova leva à
@@ -122,14 +126,15 @@
 
 ## 7. Verificação final
 
-- [ ] 7.1 `npx tsc --noEmit` passa sem erros
-- [ ] 7.2 `npm run lint` passa sem erros
-- [ ] 7.3 `npm test` passa, cobrindo `tokenStore`, `client` (auth +
+- [x] 7.1 `npx tsc --noEmit` passa sem erros
+- [x] 7.2 `npm run lint` passa sem erros
+- [x] 7.3 `npm test` passa, cobrindo `tokenStore`, `client` (auth +
       renovação), `api/auth`, `api/users`, `validation` e
-      `SessionProvider`
+      `SessionProvider` (70 testes, incluindo `RootNavigator` e
+      `LoginScreen`)
 - [ ] 7.4 Inspecionar manualmente, no dispositivo, que nenhum token
       aparece fora do Keychain (nenhuma chave nova em `AsyncStorage` além
       da preferência de tema já existente) — **requer dispositivo físico
       do usuário**
-- [ ] 7.5 `openspec validate add-auth-session --type change --strict`
+- [x] 7.5 `openspec validate add-auth-session --type change --strict`
       passa

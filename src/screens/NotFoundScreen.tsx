@@ -1,19 +1,23 @@
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useTheme } from '../theme/ThemeProvider';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'NotFound'>;
+interface Props {
+  /** Nome da tela inicial da pilha atual (`Login` na pública, `Home` na autenticada). */
+  homeRoute: string;
+}
 
 /**
  * Destino de qualquer link profundo sem rota correspondente (ver spec
- * `navigation/routing`, "Rota desconhecida") — nunca uma tela em branco ou
- * uma queda do app.
+ * `navigation/routing`, "Rota desconhecida") — nunca uma tela em branco
+ * ou uma queda do app. Compartilhada pelas duas pilhas (pública e
+ * autenticada), cada uma te navega de volta à sua própria tela inicial.
  */
-export default function NotFoundScreen({ navigation }: Props) {
+export default function NotFoundScreen({ homeRoute }: Props) {
   const theme = useTheme();
+  const navigation = useNavigation<NavigationProp<Record<string, object | undefined>>>();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.bg }]}>
@@ -22,7 +26,7 @@ export default function NotFoundScreen({ navigation }: Props) {
           Destino não encontrado
         </Text>
         <Pressable
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate(homeRoute)}
           style={[styles.button, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.md }]}
         >
           <Text style={[styles.buttonText, { color: theme.colors.onPrimary, fontSize: theme.fontSize.md }]}>
