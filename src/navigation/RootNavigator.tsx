@@ -15,13 +15,16 @@ import PublicStack, { type PublicStackParamList } from './PublicStack';
  */
 type RootLinkingParamList = PublicStackParamList & AppStackParamList;
 
-const linking: LinkingOptions<RootLinkingParamList> = {
+/** Exportado para o teste de unidade do schema (`__tests__/linking.test.ts`). */
+export const linking: LinkingOptions<RootLinkingParamList> = {
   prefixes: ['memwords://'],
   config: {
     screens: {
       Login: 'entrar',
       Register: 'cadastro',
       Home: '',
+      DeckDetail: 'baralhos/:deckId',
+      AddCard: 'baralhos/:deckId/cards/novo',
       Diagnostics: 'diagnostico',
       NotFound: '*',
     },

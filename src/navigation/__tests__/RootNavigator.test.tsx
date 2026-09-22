@@ -18,6 +18,10 @@ jest.mock('../../auth/session', () => ({
   useSession: jest.fn(),
 }));
 
+jest.mock('../../api/decks', () => ({
+  listDecks: jest.fn(() => Promise.resolve([])),
+}));
+
 import { render, screen } from '@testing-library/react-native';
 
 import { useSession } from '../../auth/session';
@@ -43,7 +47,7 @@ describe('RootNavigator', () => {
     await renderRoot();
 
     expect(screen.queryByText('Entrar')).toBeNull();
-    expect(screen.queryByText(/Olá/)).toBeNull();
+    expect(screen.queryByText('Meus baralhos')).toBeNull();
   });
 
   it('"sem-sessão" mostra a pilha pública, começando pela entrada', async () => {
@@ -59,6 +63,6 @@ describe('RootNavigator', () => {
 
     await renderRoot();
 
-    expect(await screen.findByText(`Olá, ${user.name}`)).toBeTruthy();
+    expect(await screen.findByText('Meus baralhos')).toBeTruthy();
   });
 });
