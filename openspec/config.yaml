@@ -1,0 +1,68 @@
+schema: spec-driven
+
+context: |
+  Language: Portuguese (Brazil)
+  All artifacts must be written in Portuguese (Brazil).
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Projeto: mem-words-app — app móvel (iOS, e Android quando não custar
+  esforço extra) do mem-words, com as mesmas funcionalidades do
+  mem-words-frontend (web), consumindo o mesmo backend
+  (mem-words-backend) como BFF.
+
+  Restrição central do projeto: desenvolvimento e build de iOS sem um
+  Mac disponível localmente. Por isso:
+  Stack: Expo (managed workflow) + React Native + TypeScript (strict).
+  Navegação: React Navigation (native stack + bottom tabs, conforme as
+  telas exigirem). Build/submissão: EAS Build e EAS Submit (nuvem da
+  Expo) — nenhum build local de iOS. Testes em dispositivo real via
+  Expo Go durante o desenvolvimento inicial, e via TestFlight (EAS
+  Submit) a partir do primeiro build com módulos nativos custom ou
+  perto do lançamento.
+  Sessão/autenticação: o backend hoje só emite o refresh token como
+  cookie HttpOnly (pensado para navegador). Para o app, o backend ganha
+  um fluxo de autenticação mobile dedicado (change à parte no
+  mem-words-backend) que devolve o refresh token no corpo da resposta
+  para um cliente mobile identificado, e o app o guarda com
+  expo-secure-store (Keychain no iOS, Keystore no Android) — nunca em
+  AsyncStorage puro. Ver capability `auth/session` para o contrato.
+  Design: replicar o vocabulário de tokens do design system web
+  (design-system/tokens do mem-words-frontend) adaptado para React
+  Native (StyleSheet/tema, não CSS), incluindo tema claro/escuro.
+  i18n: mesmos dois idiomas de interface do frontend (pt-BR padrão,
+  en), mesma regra de nunca afetar conteúdo criado pelo usuário.
+  Onde uma tela do frontend web já tem spec própria
+  (mem-words-frontend/openspec/specs), a versão mobile parte dela como
+  referência de comportamento — adaptando apenas o que é
+  inerentemente de navegador (URL, cookie, teclado/foco) para o
+  equivalente mobile (deep link, Keychain, gestos/VoiceOver e
+  TalkBack), nunca reduzindo o comportamento coberto.
+  Publicação: Apple Developer Program e conta EAS ainda não existem —
+  isso bloqueia apenas o primeiro build TestFlight/App Store, não o
+  desenvolvimento. Quem está construindo o app não tem Mac: qualquer
+  passo que normalmente exigiria Xcode (build local, simulador iOS,
+  Transporter) precisa de um caminho alternativo por EAS/nuvem, e isso
+  deve ser explicitado no design de qualquer change que toque
+  build/distribuição.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
